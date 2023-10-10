@@ -1,28 +1,36 @@
 package com.example.multithread_async
 
-import android.os.Handler
-import android.os.Looper
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.disposables.CompositeDisposable
+import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 class MainViewModel : ViewModel() {
-    val handler = Handler(Looper.getMainLooper())
     val randomNumLD = MutableLiveData<List<Int>>()
+    private val compositeDisposable = CompositeDisposable()
 
     init {
         getRandomNumber()
     }
 
     private fun getRandomNumber() {
-        handler.post(object : Runnable {
-            override fun run() {
+        val disposable = Observable.interval(1, TimeUnit.SECONDS)
+            .map { Random.nextInt(1000) }
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe { numbers ->
                 val numberList = randomNumLD.value?.toMutableList() ?: mutableListOf()
-                val number = Random.nextInt(1000)
-                numberList.add(number)
+                numberList.add(numbers)
                 randomNumLD.value = numberList
-                handler.postDelayed(this, 1000)
             }
-        })
+
+        compositeDisposable.add(disposable)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        compositeDisposable.clear()
     }
 }
