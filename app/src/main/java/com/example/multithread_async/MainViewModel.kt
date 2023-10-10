@@ -1,36 +1,30 @@
 package com.example.multithread_async
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.disposables.CompositeDisposable
-import java.util.concurrent.TimeUnit
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class MainViewModel : ViewModel() {
-    val randomNumLD = MutableLiveData<List<Int>>()
-    private val compositeDisposable = CompositeDisposable()
+    val randomNumFlow = MutableStateFlow<List<Int>>(emptyList())
+
 
     init {
         getRandomNumber()
     }
 
     private fun getRandomNumber() {
-        val disposable = Observable.interval(1, TimeUnit.SECONDS)
-            .map { Random.nextInt(1000) }
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe { numbers ->
-                val numberList = randomNumLD.value?.toMutableList() ?: mutableListOf()
-                numberList.add(numbers)
-                randomNumLD.value = numberList
+        viewModelScope.launch(Dispatchers.IO) {
+            while (true) {
+                val numberList = randomNumFlow.value.toMutableList()
+                val number = Random.nextInt(1000)
+                numberList.add(number)
+                randomNumFlow.value = numberList
+                delay(1000)
             }
-
-        compositeDisposable.add(disposable)
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        compositeDisposable.clear()
+        }
     }
 }

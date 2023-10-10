@@ -2,9 +2,13 @@ package com.example.multithread_async
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.multithread_async.databinding.ActivityMainBinding
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: MainViewModel
@@ -21,8 +25,12 @@ class MainActivity : AppCompatActivity() {
         binding.rvRecycler.layoutManager = LinearLayoutManager(this)
         binding.rvRecycler.adapter = adapter
 
-        viewModel.randomNumLD.observe(this) {
-            adapter.submitList(it)
+        this.lifecycleScope.launch {
+            this@MainActivity.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.randomNumFlow.collect {
+                    adapter.submitList(it)
+                }
+            }
         }
     }
 }
