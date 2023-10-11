@@ -1,13 +1,10 @@
 package com.example.multithread_async
 
-import android.os.Handler
-import android.os.Looper
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import kotlin.random.Random
 
 class MainViewModel : ViewModel() {
-    val handler = Handler(Looper.getMainLooper())
     val randomNumLD = MutableLiveData<List<Int>>()
 
     init {
@@ -15,14 +12,19 @@ class MainViewModel : ViewModel() {
     }
 
     private fun getRandomNumber() {
-        handler.post(object : Runnable {
-            override fun run() {
+        Thread {
+            while (true) {
                 val numberList = randomNumLD.value?.toMutableList() ?: mutableListOf()
                 val number = Random.nextInt(1000)
                 numberList.add(number)
-                randomNumLD.value = numberList
-                handler.postDelayed(this, 1000)
+                randomNumLD.postValue(numberList)
+
+                try {
+                    Thread.sleep(1000)
+                } catch (e: InterruptedException) {
+                    return@Thread
+                }
             }
-        })
+        }.start()
     }
 }
