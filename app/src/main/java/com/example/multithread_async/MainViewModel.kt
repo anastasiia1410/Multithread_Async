@@ -6,7 +6,10 @@ import kotlin.random.Random
 
 class MainViewModel : ViewModel() {
     val randomNumLD = MutableLiveData<List<Int>>()
+
     private var thread: Thread? = null
+
+    @Volatile
     private var isThreadRunning: Boolean = false
 
     init {
@@ -14,24 +17,22 @@ class MainViewModel : ViewModel() {
     }
 
     private fun getRandomNumber() {
-        if (!isThreadRunning) {
-            thread = Thread {
-                while (isThreadRunning) {
-                    val numberList = randomNumLD.value?.toMutableList() ?: mutableListOf()
-                    val number = Random.nextInt(1000)
-                    numberList.add(number)
-                    randomNumLD.postValue(numberList)
+        thread = Thread {
+            while (!Thread.currentThread().isInterrupted) {
+                val numberList = randomNumLD.value?.toMutableList() ?: mutableListOf()
+                val number = Random.nextInt(1000)
+                numberList.add(number)
+                randomNumLD.postValue(numberList)
 
-                    try {
-                        Thread.sleep(1000)
-                    } catch (e: InterruptedException) {
-                        return@Thread
-                    }
+                try {
+                    Thread.sleep(1000)
+                } catch (e: InterruptedException) {
+                    return@Thread
                 }
             }
-            thread?.start()
-            isThreadRunning = true
         }
+        thread?.start()
+        isThreadRunning = true
     }
 
     override fun onCleared() {
